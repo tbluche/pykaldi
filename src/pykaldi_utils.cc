@@ -39,9 +39,9 @@ kaldi::Matrix<float> List2MatrixFloat(bp::list mat){
   return ans;
 }
 
-bp::list TestList2MatrixFloat(bp::list mat){
+void TestList2MatrixFloat(bp::list mat){
   kaldi::Matrix<float> m = List2MatrixFloat(mat);
-  return Matrix2List(m);
+//   return Matrix2List(m);
 }
 
 void PyKaldi_ExportUtils() {

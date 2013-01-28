@@ -379,6 +379,10 @@ bp::dict decoder_faster_mapped(
     using fst::VectorFst;
     using fst::StdArc;
 
+    bp::dict d;
+    d["acoustic_scale"] = ac_scale;     // param
+    d["beam"]           = beam;         // param
+    
     bool binary = true;
     
     bool allow_partial = b_allow_partial;
@@ -392,13 +396,14 @@ bp::dict decoder_faster_mapped(
     
 
     // Read word symbol table
-    // FIXME : shared ptr and return it as well
-    fst::SymbolTable *word_syms = NULL;
-    if (word_syms_filename != "") {
-      word_syms = fst::SymbolTable::ReadText(word_syms_filename);
-      if (!word_syms)
-        KALDI_ERR << "Could not read symbol table from file "<<word_syms_filename;
-    }
+    sym_table_ptr symTable (fst::SymbolTable::ReadText(word_syms_filename));
+//     fst::SymbolTable *word_syms = NULL;
+//     if (word_syms_filename != "") {
+//       word_syms = fst::SymbolTable::ReadText(word_syms_filename);
+//       symTable = fst::SymbolTable::ReadText(word_syms_filename) ;
+//       if (!word_syms)
+//         KALDI_ERR << "Could not read symbol table from file "<<word_syms_filename;
+//     }
     
     
     // Read decode FST (like HCLG)
@@ -423,12 +428,9 @@ bp::dict decoder_faster_mapped(
     
     
     // Create dictionnary
-    bp::dict d;
     d["decoder"]        = decoderPtr;   // creat
     d["trans_model"]    = transModelPtr;// creat
-    d["acoustic_scale"] = ac_scale;     // param
-    d["beam"]           = beam;         // param
-    d["word_syms"]      = word_syms_filename;
+    d["word_syms"]      = symTable;
     
     
     return d;
@@ -465,7 +467,7 @@ bp::dict decode_faster_mapped_oneutt(
 	bp::list loglikes_pylist,
 	kaldi::FasterDecoder &decoder, 
 	const kaldi::TransitionModel &trans_model,
-	std::string word_syms_filename = "",
+	fst::SymbolTable word_syms_table,
 	float ac_scale = 0.1,
 	bool b_allow_partial = true
 				    ) {
@@ -486,14 +488,17 @@ bp::dict decode_faster_mapped_oneutt(
   BaseFloat acoustic_scale = ac_scale;
   bool allow_partial       = b_allow_partial; 
   
-  // FIXME : should be an opt arg? (see decoder_faster_mapped)
-  fst::SymbolTable *word_syms = NULL;
-  if (word_syms_filename != "") {
-    word_syms = fst::SymbolTable::ReadText(word_syms_filename);
-    if (!word_syms)
-      KALDI_ERR << "Could not read symbol table from file "<<word_syms_filename;
-  }
+//   fst::SymbolTable *word_syms = NULL;
+  fst::SymbolTable word_syms = word_syms_table;
   
+  // FIXME : should be an opt arg? (see decoder_faster_mapped)
+//   fst::SymbolTable *word_syms = NULL;
+//   if (word_syms_filename != "") {
+//     word_syms = fst::SymbolTable::ReadText(word_syms_filename);
+//     if (!word_syms)
+//       KALDI_ERR << "Could not read symbol table from file "<<word_syms_filename;
+//   }
+//   
   
 //   std::string key = "--";  // FIXME (should be a (optional) arg?)
 
@@ -541,14 +546,14 @@ bp::dict decode_faster_mapped_oneutt(
     std::vector<int32> pdf_list;
     
     
-    if (word_syms != NULL) {
+//     if (word_syms != NULL) {
       for (size_t i = 0; i < words.size(); i++) {
-	std::string s = word_syms->Find(words[i]);
+	std::string s = word_syms.Find(words[i]);
 	if (s == "")
 	  s = "!!ERR!!";
 	words_list.push_back(s);
       }
-    }
+//     }
     
     for (size_t i = 0; i < alignment.size(); i++)
         pdf_list.push_back(trans_model.TransitionIdToPdf(alignment[i]));
@@ -558,7 +563,6 @@ bp::dict decode_faster_mapped_oneutt(
     
     
     return ans;
-    
   } else {
     ans["failed"]  = true;
     ans["error"]   = "Could not decode";
@@ -583,7 +587,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(
 BOOST_PYTHON_FUNCTION_OVERLOADS(
   decode_faster_mapped_oneutt_overloads,
   decode_faster_mapped_oneutt,
-  3, 6);
+  4, 6);
   
 
 
@@ -605,6 +609,12 @@ void PyKaldi_ExportDecoder() {
     
     class_<kaldi::TransitionModel, trans_model_ptr, boost::noncopyable>(
       "TransitionModel",
+      boost::python::no_init
+    );
+    
+    
+    class_<fst::SymbolTable, sym_table_ptr, boost::noncopyable>(
+      "FstSymbolTable",
       boost::python::no_init
     );
     

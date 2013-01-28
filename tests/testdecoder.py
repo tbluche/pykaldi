@@ -103,16 +103,20 @@ def test_decode():
   fts        = get_features('data/testlks.scp')
   decoder    = init_decoder("data/test.mdl","data/test.fst","data/words.txt")
   
-  start = time.time()
+  start  = time.time()
+  tmconv = 0
   for k in fts:
     print "Decoding %s..."%k
     #sstart = time.time()
+    #pyk.tlm(fts[k])
+    #tmconv += time.time() - sstart
     result  = decode_with_decoder(fts[k],decoder)
-    #print time.time() - sstart
     print result
     print
     print
   print "Elapsed ", (time.time() - start)
+  #print "Time conv ", tmconv
+  #print "Est. time", time.time() - start - 2*tmconv
 
 
 
