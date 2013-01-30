@@ -1,9 +1,28 @@
 #!/usr/bin/python
+#                                                                               
+#  Copyright 2013 T. Bluche                                                     
+#                                                                               
+#  Licensed under the Apache License, Version 2.0 (the "License");              
+#  you may not use this file except in compliance with the License.             
+#  You may obtain a copy of the License at                                      
+#                                                                               
+#  http://www.apache.org/licenses/LICENSE-2.0                                   
+#                                                                               
+#  Unless required by applicable law or agreed to in writing, software          
+#  distributed under the License is distributed on an "AS IS" BASIS,            
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.     
+#  See the License for the specific language governing permissions and          
+#  limitations under the License.                                               
+#                                                                               
 
 
 import sys, os, logging, time
 
-import pykaldi as pyk
+import pykaldi2 as pyk2
+import pykaldi  as pyk
+
+from pykaldi.decoder.fasterdecoder import FasterDecoder
+
 
 
 def get_features(fin):
@@ -26,7 +45,7 @@ def get_features(fin):
     if fext == ".scp":
       rxfilename = 'scp:'+fin
     
-    fts=pyk.feature_provider(rxfilename)
+    fts=pyk2.feature_provider(rxfilename)
     
     return fts;
     
@@ -35,89 +54,47 @@ def get_features(fin):
     logging.error(" The file %s does not seem to exist"%(fin))
     exit(1)
   
-    
 
-def init_decoder(
-      model,
-      fst,
-      words         = "",
-      ac_scale      = 0.1,
-      allow_partial = True,
-      beam          = 16
-   ):
-    """
-    Initialize the decoder with a transition model and a transducer.
-
-    :param string model: path to a Kaldi transition model
-    :param string fst: path to an FST (e.g. HCLG)
-    :param string words: path to a symbol table (should match output symbols of fst)
-    :param float ac_scale: acoustic scale
-    :param bool allow_partial: whether to allow partial outputs
-    :param float beam: beam to use for beam search decoding
-
-    :rtype: dict
-    :returns: a dictionary with necessary elements for decoding to take place
-
-    """
-    decoder_dict  = pyk.decoder_faster_mapped(
-			      model,
-			      fst,words,
-			      ac_scale,
-			      allow_partial,
-			      beam)
-
-    return decoder_dict
-     
-
-
-
-def decode_with_decoder(features,decoder_dict):
-  """
-  Use a decoder, initialized for example with `init_decoder` to decode 
-  likelihoods.
   
-  :param list features: likelihhod matrix (list of lists of floats)
-  :param dict decoder_dict: initialized decoder
   
-  :rtype: dict
-  :returns: a dictionary containing results
   
-  """
-  result_dict = pyk.decode_faster_mapped_oneutt(
-                          features,
-                          decoder_dict["decoder"],
-                          decoder_dict["trans_model"],
-                          decoder_dict["word_syms"],
-                          decoder_dict["acoustic_scale"])
-  return result_dict
-    
-
+  
 
 def test_getfeatures():
   get_features('data/testlks.scp')
 
+  
+  
 def test_initdecoder():
-  init_decoder("data/test.mdl","data/test.fst","data/words.txt")
+  d = FasterDecoder("data/test.mdl","data/test.fst","data/words.txt")
+  d.Init()
 
+  
+  
 def test_decode():
+  print "DECODE FASTER MAPPED"
+  
   fts        = get_features('data/testlks.scp')
-  decoder    = init_decoder("data/test.mdl","data/test.fst","data/words.txt")
+  decoder    = FasterDecoder("data/test.mdl","data/test.fst","data/words.txt")
+  decoder.UseGmm()
+  decoder.Init()
   
   start  = time.time()
-  tmconv = 0
   for k in fts:
     print "Decoding %s..."%k
-    #sstart = time.time()
-    #pyk.tlm(fts[k])
-    #tmconv += time.time() - sstart
-    result  = decode_with_decoder(fts[k],decoder)
+    result  = decoder.DecodeOne(fts[k],decoder)
     print result
-    print
-    print
   print "Elapsed ", (time.time() - start)
-  #print "Time conv ", tmconv
-  #print "Est. time", time.time() - start - 2*tmconv
-
+  
+  
+  print "DECODE FASTER GMM"
+  fts        = get_features('data/test.scp')
+  start  = time.time()
+  for k in fts:
+    print "Decoding %s..."%k
+    result  = decoder.DecodeOne(fts[k],decoder,use_gmm=True)
+    print result
+  print "Elapsed ", (time.time() - start)
 
 
 if __name__ == '__main__':
