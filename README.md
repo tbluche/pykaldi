@@ -42,11 +42,32 @@ WARNING
 * So far, I only developed a Python version of the ``decode-faster-mapped``
   program from Kaldi
 
+* Compilation tested with KALDI at revision 1960
+
+INSTALLATION
+------------
+
+* You must have a compiled version of KALDI somewhere
+* Modify the Makefile and change the paths at the beginning of the file
+* Note : maybe there are more things in the Makefile than needed, but it worked like this...
+
+* Add the path to the folder containing the ``libkaldi.so`` and ``pykaldi2.so`` to your 
+  ``LD_LIBRARY_PATH`` and to the ``PYTHONPATH``
+* Into ``tests`` folder, run ``python testdecoder.py`` (note : not yet a nose-test...)
+
+IMPLEMENTED
+-----------
+
+* Equivalent of ``gmm-decode-faster`` and ``decode-faster-mapped``, with
+  separation between initialization of decoder (reading transition model,
+  FST, and so on) and decoding of one utterance. 
+  * Usage examples in ``tests/testdecoder.py`` and ``pykaldi/decoder/fasterdecoder.py``
+
 
 TODO
 ----
 
-* Proper makefile
+* Cleaner Makefile
 * Tests
 * Clean code - and add licence in files
 * Add functionalities
